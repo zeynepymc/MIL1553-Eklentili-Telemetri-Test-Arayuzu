@@ -1,0 +1,19 @@
+# Qt Creator local user settings
+*.user
+*.user.*
+
+# Qt build outputs
+build/
+build-*
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.exe
+
+# CMake / qmake build directories
+CMakeCache.txt
+CMakeFiles/
+Makefile*
