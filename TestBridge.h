@@ -6,6 +6,10 @@
 #include <QNetworkDatagram>
 #include <QList>
 #include <QTimer>
+#include <QFile>
+#include <QTextStream>
+#include <QDateTime>
+#include <QRegularExpression>
 
 class TestBridge : public QObject
 {
@@ -13,39 +17,39 @@ class TestBridge : public QObject
 public:
     explicit TestBridge(QObject *parent = nullptr);
 
-    // QML'den Çağrılacak Buton Fonksiyonları
+    // QML'den çağrılacak Buton Fonksiyonları
     Q_INVOKABLE void requestSensorData();
     Q_INVOKABLE void sendPowerCommand(bool powerOn);
     Q_INVOKABLE void updateMilSettings(int rt, int sensorSa, int powerSa);
 
-    // YENİ: NIC Ayarları Fonksiyonları
+    // NIC ayarları fonksiyonları
     Q_INVOKABLE void requestNicConfig();
     Q_INVOKABLE void updateNicConfig(QString ip, QString mac, QString rx, QString tx);
 
-signals:
-    void telemetryReceived(float temp, int light, QString state);
-    void milReceived();
-    void logAdded(QString logMsg);
-    void commandTimeout(QString command);
+    // Manuel komut girişi için komut paneli bu fonksiyonu çağırır
+    Q_INVOKABLE void sendRawCommand(const QString &rawCommand);
 
-    // YENİ: KART'tan gelen NIC bilgilerini QML'e aktaracak sinyal
+signals:
+    void telemetryReceived(float temp, int light, QString state); //karta veri ulastı sinyali
+    void milReceived(); // karta MIL-STD-1553 ile veri geldi sinyali
+    void logAdded(QString logMsg);
+    void commandTimeout(QString command); // komut hedefe ulasamadı
+
+    // Karttan gelen NIC bilgilerini QML'e aktaracak sinyal
     void nicConfigReceived(QString ip, QString mac, QString rx, QString tx);
     void safeStateReceived();
 
 private slots:
-    void readDatagrams();
-    void onResponseTimeout(); // Yanıt bekleme süresi doldu[cite: 3]
-    void onNicResponseTimeout(); // NIC/port değişikliği KART tarafından onaylanmadı
+    void readDatagrams(); // UDP'den paket geldiğinde tetiklenir
+    void onResponseTimeout(); // Yanıt bekleme süresi doldugunda tetiklenir
+    void onNicResponseTimeout(); // NIC/port değişikliği kart tarafından onaylanmadıgında tetiklenir
 
 private:
     QUdpSocket *udpSocket;
 
-    // Test Arayüzü 5003'ü dinler, KART'a (5001'e) komut gönderir.
+    // Test Arayüzü 5003'ü dinler, karta (5001'e) komut gönderir
     int RX_PORT = 5003; // Test Arayüzü 5003'ü dinler
-    // DÜZELTME: KART'ın gerçek dinleme (rx) portu 5001'dir. Burası eskiden
-    // yanlışlıkla 5000 idi; bu yüzden başlangıçta KART'a giden hiçbir komut
-    // (GET_NIC, SET_NIC, MIL_BC...) hedefine ulaşmıyordu.
-    int TX_PORT = 5001;
+    int TX_PORT = 5001; // Kartın gerçek dinleme (rx) portu
     QString TARGET_IP = "127.0.0.1";
 
     int targetRt = 15;
@@ -59,11 +63,7 @@ private:
     const int MAX_RETRIES = 2;
     const int RESPONSE_TIMEOUT_MS = 200;
 
-    // YENİ: NIC/port değişikliği için AYRI bir onay-zaman-aşımı mekanizması.
-    // MIL protokolündeki responseTimeoutTimer'dan bilerek bağımsız tutuldu.
-    // updateNicConfig() öncesinde SET_NIC "gönder ve unut" şeklindeydi; KART
-    // hiç yanıt vermese bile ne bir hata görünüyordu ne de eski ayarlara
-    // dönülüyordu. Bu, tam olarak sessizce bağlanamama sorununun kaynağıydı.
+    // NIC/port değişikliği için ayrı bir onay-zaman-aşımı mekanizması
     QTimer *nicResponseTimeoutTimer;
     const int NIC_RESPONSE_TIMEOUT_MS = 500;
     QString pendingOldIp;
@@ -71,5 +71,8 @@ private:
     int pendingOldRxPort = 0;
 
     void sendMilCommand(int targetRt, int tr, int sa, int wc, QList<quint16> dataWords = QList<quint16>());
+
+    //  NIC ve MIL ayar değişikliklerini kalıcı olarak txt dosyasına kaydeder (flash memory simülasyonu)
+    void saveToTestLog(const QString &entry);
 };
 #endif

@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     TestBridge testBridge;
     QQmlApplicationEngine engine;
 
-    // C++ sınıfını QML'e 'testBridge' adıyla bağladık
+    // C++ sınıfı QML'e 'testBridge' adıyla bağlanır
     engine.rootContext()->setContextProperty("testBridge", &testBridge);
 
     engine.loadFromModule("TestArayuzu", "Main");

@@ -14,13 +14,13 @@ ApplicationWindow {
     Connections {
         target: testBridge
         function onTelemetryReceived(temp, light, state) {
-            if (isSystemPowered) {
+            if (isSystemPowered) { // arayuzdeki ledler sistem acıksa duruma gore yanıp soner
                 cpuLed.blink(); ramLed.blink(); spwLed.blink(); flashLed.blink();
             }
         }
-        function onMilReceived() { milLed.blink() }
+        function onMilReceived() { milLed.blink() } // MIL verisi geldiğinde ilgili led yanıp soner
 
-        // YENİ: Gelen NIC verilerini Pop-up'taki kutulara yaz
+        // Gelen NIC verileri Pop-Up'taki kutucuklara yazılır
         function onNicConfigReceived(ip, mac, rx, tx) {
             ipInput.text = ip
             macInput.text = mac
@@ -28,18 +28,19 @@ ApplicationWindow {
             txInput.text = tx
         }
 
-        // YENİ: KART gücü kapattığında sistemi tamamen durdurur
+        // kart gücü kapattığında sistemi tamamen durdurur
         function onSafeStateReceived() {
             isSystemPowered = false
             autoPollSwitch.checked = false
         }
 
         function onLogAdded(msg) {
-            // DÜZELTME: Güç yokken gelen ağ paketlerinde NIC LED tepki vermesin
+            // Sistem çalışıyorken gelen "[RX]" (Veri alma) veya "[TX]" (Veri gönderme) mesajlarında NIC ledi yanıp soner
             if (isSystemPowered && (msg.indexOf("[RX]") !== -1 || msg.indexOf("[TX]") !== -1)) {
                 nicLed.blink()
             }
 
+            // Log ekranı ayarları
             var time = new Date().toLocaleTimeString(Qt.locale(), "hh:mm:ss")
             var fullMsg = "[" + time + "] " + msg
             var vbar = logScroll.ScrollBar.vertical
@@ -58,7 +59,7 @@ ApplicationWindow {
             onTriggered: testBridge.requestSensorData()
         }
 
-    // --- NIC AYARLARI POP-UP ---
+    // NIC AYARLARI Pop-Up
     Popup {
         id: nicPopup
         anchors.centerIn: parent
@@ -116,7 +117,7 @@ ApplicationWindow {
         }
     }
 
-    // --- MIL AYARLARI POP-UP ---
+    // MIL PROTOKOLU AYARLARI Pop-Up
     Popup {
         id: milPopup
         anchors.centerIn: parent
@@ -268,6 +269,46 @@ ApplicationWindow {
                 LedIndicator { id: milLed; name: "MIL" }
             }
         }
+
+            // MANUEL KOMUT PANELI
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 10
+
+                TextField {
+                    id: rawCommandInput
+                    placeholderText: "Metinsel komutu buraya yazın (Örn: SET_MIL 1)"
+                    Layout.fillWidth: true
+                    color: "black"
+                    font.bold: true
+                    font.pixelSize: 13
+
+                    // Klavyede Enter'a basınca gönderir
+                    onAccepted: {
+                        var cmd = text.trim()
+                        if (cmd !== "") {
+                            testBridge.sendRawCommand(cmd)
+                            text = ""
+                        }
+                    }
+                }
+
+                Button {
+                    text: "GÖNDER"
+                    font.bold: true
+                    Layout.preferredHeight: 40
+                    width: 90
+
+                    // Butona tıklayınca gönderir
+                    onClicked: {
+                        var cmd = rawCommandInput.text.trim()
+                        if (cmd !== "") {
+                            testBridge.sendRawCommand(cmd)
+                            rawCommandInput.text = ""
+                        }
+                    }
+                }
+            }
 
         Text { text: "Arka Planda Akan Ağ Trafiği & MIL-1553 Hex Logları:"; color: "#aaa"; font.bold: true; font.pixelSize: 14 }
 
