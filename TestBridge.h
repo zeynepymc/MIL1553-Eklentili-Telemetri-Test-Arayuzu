@@ -29,9 +29,12 @@ public:
     // Manuel komut girişi için komut paneli bu fonksiyonu çağırır
     Q_INVOKABLE void sendRawCommand(const QString &rawCommand);
 
+    Q_INVOKABLE void requestSpaceWireData();
+
 signals:
     void telemetryReceived(float temp, int light, QString state); //karta veri ulastı sinyali
     void milReceived(); // karta MIL-STD-1553 ile veri geldi sinyali
+    void spwReceived();
     void logAdded(QString logMsg);
     void commandTimeout(QString command); // komut hedefe ulasamadı
 

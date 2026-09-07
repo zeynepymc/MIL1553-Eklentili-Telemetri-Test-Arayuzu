@@ -28,6 +28,13 @@ ApplicationWindow {
             txInput.text = tx
         }
 
+        // Spacewire Led tetikleyicisi
+        function onSpwReceived() {
+            if (isSystemPowered) {
+                spwLed.blink()
+            }
+        }
+
         // kart gücü kapattığında sistemi tamamen durdurur
         function onSafeStateReceived() {
             isSystemPowered = false
@@ -222,6 +229,17 @@ ApplicationWindow {
                 text: "⚙️ MIL AYARLARI"
                 font.bold: true; Layout.preferredHeight: 45; width: 130
                 onClicked: milPopup.open()
+            }
+
+
+            Button {
+                text: "🚀 SpW VERİ İSTE"
+                font.bold: true; Layout.preferredHeight: 45; width: 130
+                onClicked: {
+                    if (isSystemPowered) {
+                        testBridge.requestSpaceWireData()
+                    }
+                }
             }
 
             Switch {

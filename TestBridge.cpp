@@ -42,6 +42,12 @@ void TestBridge::requestNicConfig() {
     emit logAdded("[TX-CMD] " + cmd);
 }
 
+void TestBridge::requestSpaceWireData() {
+    QString cmd = "$SPW,READ_PAYLOAD#";
+    udpSocket->writeDatagram(cmd.toUtf8(), QHostAddress(TARGET_IP), TX_PORT);
+    emit logAdded("[TX-SPW] " + cmd);
+}
+
 // NIC Ayarlarının Guncellenmesi
 void TestBridge::updateNicConfig(QString ip, QString mac, QString rx, QString tx) {
     // sadece komut gonderilir, ayarlar guncellenmez
@@ -166,11 +172,18 @@ void TestBridge::readDatagrams() {
             emit logAdded("[BC-SİSTEM] KART komutu başarıyla aldı.");
             emit milReceived();
         }
+
+        else if (packet.startsWith("$SPW,PAYLOAD_DATA")) {
+            emit logAdded("[RX-SPW] Yüksek Hızlı Payload Alındı: " + packet);
+            emit spwReceived(); // Arayüzdeki LED'i tetikleyecek sinyal
+        }
+
         else if (packet == "$DATA,0,0,SAFE_STATE#") {
             emit logAdded("[SİSTEM BİLGİSİ] KART Güvenli Moda (SAFE_STATE) geçti. Güç kesildi.");
             emit safeStateReceived();
             emit telemetryReceived(0.0f, 0, "SAFE_STATE");
         }
+
         // Ağ Ayarlarının (NIC) Güncellenmesi
         else if (packet.startsWith("$NIC_INFO") && packet.split(',').size() == 5) {
             nicResponseTimeoutTimer->stop();
